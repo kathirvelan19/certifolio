@@ -1,0 +1,1 @@
+- [Clerk version compatibility](clerk-versions.md) — @clerk/react@6.x + @clerk/express@2.x both need @clerk/shared@^4.21.0; earlier 5.x react had incompatible exports.

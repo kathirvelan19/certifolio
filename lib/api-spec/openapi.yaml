@@ -3,13 +3,21 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Certfolio API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: Storage
+    description: Object storage upload and serving endpoints.
+  - name: Certificates
+    description: Certificate management
+  - name: Users
+    description: User profile management
+  - name: Portfolio
+    description: Public portfolio pages
 paths:
   /healthz:
     get:
@@ -24,6 +32,281 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /storage/uploads/request-url:
+    post:
+      tags: [Storage]
+      operationId: requestUploadUrl
+      summary: Request a presigned URL for file upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadUrlRequest'
+      responses:
+        '200':
+          description: Presigned upload URL generated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadUrlResponse'
+        '400':
+          description: Missing or invalid required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+        '500':
+          description: Failed to generate upload URL.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+  /storage/public-objects/{filePath}:
+    get:
+      tags: [Storage]
+      operationId: getPublicObject
+      summary: Serve a public asset
+      parameters:
+        - name: filePath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Object content streamed.
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: File not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+  /storage/objects/{objectPath}:
+    get:
+      tags: [Storage]
+      operationId: getStorageObject
+      summary: Serve an object entity
+      parameters:
+        - name: objectPath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Object content streamed.
+          content:
+            '*/*':
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Object not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+  /certificates:
+    get:
+      operationId: listCertificates
+      tags: [Certificates]
+      summary: List all certificates for the authenticated user
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of certificates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Certificate"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    post:
+      operationId: createCertificate
+      tags: [Certificates]
+      summary: Create a new certificate record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CertificateInput"
+      responses:
+        "201":
+          description: Certificate created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Certificate"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /certificates/stats:
+    get:
+      operationId: getCertificateStats
+      tags: [Certificates]
+      summary: Get aggregate stats for the authenticated user's certificates
+      responses:
+        "200":
+          description: Certificate statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CertificateStats"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /certificates/{id}:
+    get:
+      operationId: getCertificate
+      tags: [Certificates]
+      summary: Get a certificate by ID (public, increments view count)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Certificate found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Certificate"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    delete:
+      operationId: deleteCertificate
+      tags: [Certificates]
+      summary: Delete a certificate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Certificate deleted
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /users/profile:
+    get:
+      operationId: getMyProfile
+      tags: [Users]
+      summary: Get the authenticated user's profile
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    put:
+      operationId: updateMyProfile
+      tags: [Users]
+      summary: Update the authenticated user's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfileInput"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
+  /portfolio/{username}:
+    get:
+      operationId: getPortfolio
+      tags: [Portfolio]
+      summary: Get a public portfolio page for a user (no auth required)
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Portfolio data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Portfolio"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +317,164 @@ components:
       required:
         - status
 
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    UploadUrlRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        size:
+          type: integer
+          minimum: 1
+        contentType:
+          type: string
+          minLength: 1
+
+    UploadUrlResponse:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+          format: uri
+        objectPath:
+          type: string
+        metadata:
+          $ref: '#/components/schemas/UploadUrlRequest'
+
+    Certificate:
+      type: object
+      required: [id, title, issuer, fileUrl, category, viewCount, createdAt, uploadedByClerkId]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        issuer:
+          type: string
+        fileUrl:
+          type: string
+        fileType:
+          type: ["string", "null"]
+        category:
+          type: string
+        viewCount:
+          type: integer
+        shareToken:
+          type: ["string", "null"]
+        uploadedByClerkId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CertificateInput:
+      type: object
+      required: [title, issuer, fileUrl, category]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        issuer:
+          type: string
+          minLength: 1
+        fileUrl:
+          type: string
+          minLength: 1
+        fileType:
+          type: string
+        category:
+          type: string
+
+    CertificateStats:
+      type: object
+      required: [total, totalViews, byCategory, mostViewed]
+      properties:
+        total:
+          type: integer
+        totalViews:
+          type: integer
+        byCategory:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoryCount"
+        mostViewed:
+          type: array
+          items:
+            $ref: "#/components/schemas/Certificate"
+
+    CategoryCount:
+      type: object
+      required: [category, count]
+      properties:
+        category:
+          type: string
+        count:
+          type: integer
+
+    UserProfile:
+      type: object
+      required: [clerkId, username]
+      properties:
+        id:
+          type: integer
+        clerkId:
+          type: string
+        username:
+          type: string
+        name:
+          type: ["string", "null"]
+        bio:
+          type: ["string", "null"]
+        profileImageUrl:
+          type: ["string", "null"]
+        github:
+          type: ["string", "null"]
+        linkedin:
+          type: ["string", "null"]
+        leetcode:
+          type: ["string", "null"]
+        resumeUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: ["string", "null"]
+          format: date-time
+
+    UserProfileInput:
+      type: object
+      properties:
+        username:
+          type: string
+        name:
+          type: string
+        bio:
+          type: string
+        profileImageUrl:
+          type: string
+        github:
+          type: string
+        linkedin:
+          type: string
+        leetcode:
+          type: string
+        resumeUrl:
+          type: string
+
+    Portfolio:
+      type: object
+      required: [user, certificates]
+      properties:
+        user:
+          $ref: "#/components/schemas/UserProfile"
+        certificates:
+          type: array
+          items:
+            $ref: "#/components/schemas/Certificate"

@@ -1,0 +1,448 @@
+Here’s a **complete 1500-word production-grade prompt** for your project **Certfolio**. You can use this for AI code generation tools, documentation, or even as your project master spec.
+
+---
+
+# 🚀 CERTFOLIO – FULL-STACK WEB APPLICATION MASTER PROMPT
+
+## 1. Project Overview
+
+Build a full-stack web application called **“Certfolio”** that allows students to upload academic, internship, and certification documents (PDF or images), generate secure shareable public links, and showcase them in a professional portfolio format.
+
+The main goal is to solve a real-world problem: students struggle to prove their skills and certifications during placements and job applications. Certfolio provides a centralized, verifiable, and shareable certificate management system.
+
+Recruiters should be able to open a link and instantly verify certificates without logging in.
+
+---
+
+## 2. Core Idea
+
+* Students upload certificates (PDF or images)
+* System stores files securely in Cloud storage
+* Generates a public URL for each certificate
+* Users can share this URL in resumes, LinkedIn, GitHub, or portfolios
+* Recruiters can view certificates without login
+* Each certificate tracks views and metadata
+* Users also get a personal portfolio page
+
+---
+
+## 3. Tech Stack
+
+### Frontend
+
+* React (Vite)
+* TypeScript
+* Tailwind CSS
+* Axios
+* React Router DOM
+
+### Backend
+
+* Node.js
+* Express.js
+* MongoDB Atlas
+* JWT Authentication
+* bcryptjs (password hashing)
+
+### Storage & Services
+
+* Cloudinary (file storage)
+* QRCode (certificate sharing)
+* dotenv (environment variables)
+
+---
+
+## 4. Folder Structure
+
+### Client (Frontend)
+
+```
+client/
+│
+├── src/
+│   ├── assets/
+│   ├── components/
+│   │   ├── Navbar.tsx
+│   │   ├── CertificateCard.tsx
+│   │   ├── UploadForm.tsx
+│   │   ├── ProtectedRoute.tsx
+│   │   ├── Loader.tsx
+│   │   └── QRCodeGenerator.tsx
+│   │
+│   ├── pages/
+│   │   ├── Home.tsx
+│   │   ├── Login.tsx
+│   │   ├── Register.tsx
+│   │   ├── Dashboard.tsx
+│   │   ├── UploadCertificate.tsx
+│   │   ├── CertificateView.tsx
+│   │   ├── Portfolio.tsx
+│   │   ├── Profile.tsx
+│   │   └── NotFound.tsx
+│   │
+│   ├── context/
+│   │   └── AuthContext.tsx
+│   │
+│   ├── hooks/
+│   │   └── useAuth.ts
+│   │
+│   ├── services/
+│   │   ├── api.ts
+│   │   ├── authService.ts
+│   │   └── certificateService.ts
+│   │
+│   ├── types/
+│   │   ├── User.ts
+│   │   ├── Certificate.ts
+│   │   └── ApiResponse.ts
+│   │
+│   ├── utils/
+│   │   ├── formatDate.ts
+│   │   ├── copyToClipboard.ts
+│   │   └── constants.ts
+│   │
+│   ├── routes/
+│   │   └── AppRoutes.tsx
+│   │
+│   ├── App.tsx
+│   └── main.tsx
+```
+
+---
+
+### Server (Backend)
+
+```
+server/
+│
+├── config/
+│   ├── db.js
+│   └── cloudinary.js
+│
+├── controllers/
+│   ├── authController.js
+│   ├── certificateController.js
+│   ├── portfolioController.js
+│   └── userController.js
+│
+├── middleware/
+│   ├── authMiddleware.js
+│   ├── uploadMiddleware.js
+│   ├── errorMiddleware.js
+│   └── validateMiddleware.js
+│
+├── models/
+│   ├── User.js
+│   └── Certificate.js
+│
+├── routes/
+│   ├── authRoutes.js
+│   ├── certificateRoutes.js
+│   ├── portfolioRoutes.js
+│   └── userRoutes.js
+│
+├── services/
+│   ├── cloudinaryService.js
+│   └── qrService.js
+│
+├── utils/
+│   ├── generateToken.js
+│   ├── generateQRCode.js
+│   └── responseHandler.js
+│
+├── uploads/
+├── server.js
+└── .env
+```
+
+---
+
+## 5. Database Models
+
+### User Model
+
+```js
+{
+  name: String,
+  username: String,
+  email: String,
+  password: String,
+  profileImage: String,
+  github: String,
+  linkedin: String,
+  leetcode: String,
+  resumeUrl: String,
+  createdAt: Date
+}
+```
+
+---
+
+### Certificate Model
+
+```js
+{
+  title: String,
+  issuer: String,
+  fileUrl: String,
+  cloudinaryId: String,
+  uploadedBy: ObjectId,
+  category: String,
+  viewCount: Number,
+  createdAt: Date
+}
+```
+
+---
+
+## 6. Core Features
+
+### 1. Authentication System
+
+* User registration
+* User login
+* Password hashing (bcrypt)
+* JWT authentication
+* Protected routes
+
+---
+
+### 2. Certificate Upload System
+
+* Upload PDF or image files
+* Store files in Cloudinary
+* Save metadata in MongoDB
+* Generate unique certificate ID
+* Return shareable URL
+
+---
+
+### 3. Dashboard
+
+* View all uploaded certificates
+* Delete certificates
+* Copy certificate links
+* Search/filter certificates
+* Display view count
+
+---
+
+### 4. Public Certificate Page
+
+Route:
+
+```
+/certificate/:id
+```
+
+Displays:
+
+* Certificate title
+* Issuer name
+* Upload date
+* Preview (PDF/Image)
+* Open/download button
+* View counter
+
+---
+
+### 5. Student Portfolio Page
+
+Route:
+
+```
+/u/:username
+```
+
+Displays:
+
+* Student profile
+* Social links (GitHub, LinkedIn, LeetCode)
+* Resume link
+* All certificates in grid format
+
+---
+
+### 6. Profile Page
+
+* Update personal details
+* Upload profile image
+* Add social links
+* Update resume link
+
+---
+
+## 7. Advanced Features
+
+### QR Code Generation
+
+* Generate QR code for each certificate link
+* Easy sharing via mobile scanning
+
+### View Tracking
+
+* Track how many times certificate is opened
+
+### Certificate Categories
+
+* Internship
+* Course
+* Workshop
+* Hackathon
+* Achievement
+
+### Portfolio Analytics
+
+* Track certificate views
+* Most viewed certificates
+
+### Custom URL
+
+* `/u/username` personal portfolio
+
+---
+
+## 8. API Endpoints
+
+### Auth Routes
+
+```
+POST /api/auth/register
+POST /api/auth/login
+GET  /api/auth/me
+```
+
+---
+
+### Certificate Routes
+
+```
+POST   /api/certificates/upload
+GET    /api/certificates
+GET    /api/certificates/:id
+DELETE /api/certificates/:id
+```
+
+---
+
+### Portfolio Routes
+
+```
+GET /api/portfolio/:username
+```
+
+---
+
+### User Routes
+
+```
+PUT /api/users/profile
+GET /api/users/:username
+```
+
+---
+
+## 9. UI Requirements
+
+* Modern SaaS-style UI
+* Fully responsive (mobile + desktop)
+* Clean dashboard cards
+* Dark mode support (optional)
+* Smooth navigation
+* Minimal recruiter-friendly design
+* Fast loading experience
+
+---
+
+## 10. Deployment Strategy
+
+### Frontend
+
+* Deploy on Vercel
+
+### Backend
+
+* Deploy on Render / Railway
+
+### Database
+
+* MongoDB Atlas
+
+### File Storage
+
+* Cloudinary
+
+---
+
+## 11. Business Logic Flow
+
+```
+User uploads certificate
+        ↓
+Backend receives file
+        ↓
+Cloudinary stores file
+        ↓
+MongoDB saves metadata
+        ↓
+Public URL generated
+        ↓
+QR Code created
+        ↓
+User shares link
+        ↓
+Recruiter opens link
+        ↓
+Certificate verified
+        ↓
+View count increases
+```
+
+---
+
+## 12. Final Outcome
+
+After building this project, you will have:
+
+* Full-stack MERN application
+* Authentication system
+* Cloud file storage system
+* Public portfolio system
+* Real-world SaaS-level architecture
+* Resume-ready project
+* Internship-level portfolio project
+
+---
+
+## 13. Future Improvements
+
+* Email verification system
+* AI-based certificate tagging
+* Resume builder integration
+* Drag & drop upload
+* Certificate validation system with institutions
+* Admin dashboard
+
+---
+
+## 14. Final Note
+
+Certfolio is not just a project — it is a **real-world SaaS product idea** that solves:
+
+* Resume verification problems
+* Certificate authenticity issues
+* Portfolio building challenges
+
+It can easily be expanded into a startup product.
+
+---
+
+If you want next step, I can help you:
+
+👉 Deploy full project
+👉 Add QR verification system
+👉 Convert UI into premium SaaS design
+👉 Add analytics dashboard
+👉 Turn this into startup MVP pitch
+
+Just say 👍
