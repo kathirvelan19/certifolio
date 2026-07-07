@@ -72,7 +72,10 @@ const clerkAppearance = {
 function SignInPage() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-gray-50/50 px-4 py-12">
-      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+      <SignIn
+  routing="virtual"
+  signUpUrl="/sign-up"
+/>
     </div>
   );
 }
@@ -80,7 +83,10 @@ function SignInPage() {
 function SignUpPage() {
   return (
     <div className="flex min-h-[100dvh] items-center justify-center bg-gray-50/50 px-4 py-12">
-      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+     <SignUp
+  routing="virtual"
+  signInUrl="/sign-in"
+/>
     </div>
   );
 }
