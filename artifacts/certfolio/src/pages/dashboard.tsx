@@ -57,12 +57,12 @@ function StatsCards() {
         </CardHeader>
         <CardContent>
           <div className="text-xl font-bold text-primary truncate">
-            {stats.byCategory && stats.byCategory.length > 0 
+            {Array.isArray(stats.byCategory) && stats.byCategory.length > 0
               ? [...stats.byCategory].sort((a, b) => b.count - a.count)[0].category 
               : "None"}
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            {stats.byCategory && stats.byCategory.length > 0 
+            {Array.isArray(stats.byCategory) && stats.byCategory.length > 0
               ? `${[...stats.byCategory].sort((a, b) => b.count - a.count)[0].count} certificates` 
               : "Upload certificates to see stats"}
           </p>
