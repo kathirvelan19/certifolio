@@ -35,7 +35,13 @@ app.use(
 
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
-app.use(cors({ credentials: true, origin: true }));
+app.use(
+  cors({
+    credentials: true,
+    origin: true,
+  }),
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -48,6 +54,14 @@ app.use(
   })),
 );
 
+// Optional health check
+app.get("/api/health", (_req, res) => {
+  res.json({
+    status: "ok",
+  });
+});
+
+// Register all API routes
 app.use("/api", router);
 
 export default app;
