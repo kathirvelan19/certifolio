@@ -175,7 +175,7 @@ export default function Dashboard() {
           </div>
         ) : Array.isArray(certificates) && certificates.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {certificates.map((cert) => (
+            {(Array.isArray(certificates) ? certificates : []).map((cert) => (
               <Card key={cert.id} className="overflow-hidden border-gray-100 shadow-sm hover:shadow-md transition-shadow group flex flex-col">
                 <div className="h-40 bg-gray-100 relative border-b border-gray-100 flex items-center justify-center overflow-hidden">
                   {cert.fileType?.includes('image') ? (
