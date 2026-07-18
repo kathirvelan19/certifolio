@@ -173,7 +173,7 @@ export default function Dashboard() {
               </Card>
             ))}
           </div>
-        ) : certificates && certificates.length > 0 ? (
+        ) : Array.isArray(certificates) && certificates.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {certificates.map((cert) => (
               <Card key={cert.id} className="overflow-hidden border-gray-100 shadow-sm hover:shadow-md transition-shadow group flex flex-col">
