@@ -112,4 +112,35 @@ export class ObjectStorageService {
     try {
       const url = new URL(rawPath);
       const prefix = `/storage/v1/object/public/${BUCKET_NAME}/`;
-      const signPrefix = `/storage/v1/ob
+      const signPrefix = `/storage/v1/object/sign/${BUCKET_NAME}/`;
+
+      let storagePath = "";
+      if (url.pathname.startsWith(prefix)) {
+        storagePath = url.pathname.slice(prefix.length);
+      } else if (url.pathname.startsWith(signPrefix)) {
+        storagePath = url.pathname.slice(signPrefix.length);
+      } else {
+        return rawPath;
+      }
+
+      const privateDir = this.getPrivateObjectDir();
+      const privateDirPrefix = privateDir.endsWith("/") ? privateDir : `${privateDir}/`;
+
+      if (storagePath.startsWith(privateDirPrefix)) {
+        const entityId = storagePath.slice(privateDirPrefix.length);
+        return `/objects/${entityId}`;
+      }
+      return `/${storagePath}`;
+    } catch {
+      return rawPath;
+    }
+  }
+
+  async trySetObjectEntityAclPolicy(rawPath: string, _policy: any): Promise<string> {
+    return this.normalizeObjectEntityPath(rawPath);
+  }
+
+  async canAccessObjectEntity(_args: any): Promise<boolean> {
+    return true;
+  }
+}
