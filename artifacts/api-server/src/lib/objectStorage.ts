@@ -1,139 +1,85 @@
-import { randomUUID } from "crypto";
-import { supabase } from "./supabase";
+import { Router, type IRouter, type Request, type Response } from "express";
+import { Readable } from "stream";
+import {
+  RequestUploadUrlBody,
+  RequestUploadUrlResponse,
+} from "@workspace/api-zod";
+import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 
-const BUCKET_NAME = "certificates";
+const router: IRouter = Router();
+const objectStorageService = new ObjectStorageService();
 
-export class ObjectNotFoundError extends Error {
-  constructor() {
-    super("Object not found");
-    this.name = "ObjectNotFoundError";
-    Object.setPrototypeOf(this, ObjectNotFoundError.prototype);
+router.post("/storage/uploads/request-url", async (req: Request, res: Response) => {
+  const parsed = RequestUploadUrlBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request body" });
+    return;
   }
-}
 
-export interface SupabaseFileHandle {
-  name: string;
-  bucket: string;
-  path: string;
-}
+  try {
+    const { name, size, contentType } = parsed.data;
+    const { uploadURL, objectPath } = await objectStorageService.getObjectEntityUploadURL();
 
-export class ObjectStorageService {
-  constructor() {}
-
-  getPublicObjectSearchPaths(): Array<string> {
-    const pathsStr = process.env.PUBLIC_OBJECT_SEARCH_PATHS || "";
-    return Array.from(
-      new Set(
-        pathsStr
-          .split(",")
-          .map((path) => path.trim())
-          .filter((path) => path.length > 0)
-      )
+    res.json(
+      RequestUploadUrlResponse.parse({
+        uploadURL,
+        objectPath,
+        metadata: { name, size, contentType },
+      }),
     );
+  } catch (error) {
+    req.log.error({ err: error }, "Upload URL error");
+    res.status(500).json({ error: "Failed to generate upload URL" });
   }
+});
 
-  getPrivateObjectDir(): string {
-    const dir = process.env.PRIVATE_OBJECT_DIR || "";
-    if (!dir) {
-      throw new Error("PRIVATE_OBJECT_DIR not set.");
+router.get("/storage/public-objects/*", async (req: Request, res: Response) => {
+  try {
+    const filePath = req.params[0];
+    const file = await objectStorageService.searchPublicObject(filePath);
+    if (!file) {
+      res.status(404).json({ error: "File not found" });
+      return;
     }
-    return dir;
-  }
 
-  async searchPublicObject(filePath: string): Promise<SupabaseFileHandle | null> {
-    const searchPaths = this.getPublicObjectSearchPaths();
-    for (const searchPath of searchPaths) {
-      const fullPath = `${searchPath}/${filePath}`.replace(/\/+/g, "/");
-      const pathParts = fullPath.split("/");
-      const fileName = pathParts.pop() || "";
-      const folderPath = pathParts.join("/");
+    const response = await objectStorageService.downloadObject(file);
+    res.status(response.status);
+    response.headers.forEach((value, key) => res.setHeader(key, value));
 
-      const { data, error } = await supabase.storage
-        .from(BUCKET_NAME)
-        .list(folderPath, { search: fileName });
-
-      if (!error && data && data.some(f => f.name === fileName)) {
-        return { name: filePath, bucket: BUCKET_NAME, path: fullPath };
-      }
+    if (response.body) {
+      Readable.fromWeb(response.body as any).pipe(res);
+    } else {
+      res.end();
     }
-    return null;
+  } catch (error) {
+    req.log.error({ err: error }, "Public serve error");
+    res.status(500).json({ error: "Failed to serve object" });
   }
+});
 
-  async downloadObject(file: SupabaseFileHandle, cacheTtlSec: number = 3600): Promise<Response> {
-    const { data, error } = await supabase.storage.from(file.bucket).download(file.path);
-    if (error || !data) throw new ObjectNotFoundError();
+router.get("/storage/objects/*", async (req: Request, res: Response) => {
+  try {
+    const wildcardPath = req.params[0];
+    const objectPath = `/objects/${wildcardPath}`;
+    const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
 
-    return new Response(data.stream(), {
-      headers: {
-        "Content-Type": data.type || "application/octet-stream",
-        "Cache-Control": `public, max-age=${cacheTtlSec}`,
-        "Content-Length": String(data.size),
-      },
-    });
-  }
+    const response = await objectStorageService.downloadObject(objectFile);
+    res.status(response.status);
+    response.headers.forEach((value, key) => res.setHeader(key, value));
 
-  async getObjectEntityUploadURL(): Promise<{ uploadURL: string; objectPath: string }> {
-    const privateObjectDir = this.getPrivateObjectDir();
-    const objectId = randomUUID();
-    const entityId = `uploads/${objectId}`;
-    const fullPath = `${privateObjectDir}/${entityId}`.replace(/\/+/g, "/");
-
-    const { data, error } = await supabase.storage
-      .from(BUCKET_NAME)
-      .createSignedUploadUrl(fullPath, 900);
-
-    if (error || !data) throw new Error(`Upload URL error: ${error?.message}`);
-
-    return {
-      uploadURL: data.signedUrl,
-      objectPath: `/objects/${entityId}`,
-    };
-  }
-
-  async getObjectEntityFile(objectPath: string): Promise<SupabaseFileHandle> {
-    if (!objectPath.startsWith("/objects/")) throw new ObjectNotFoundError();
-    const entityId = objectPath.slice("/objects/".length);
-    const fullPath = `${this.getPrivateObjectDir()}/${entityId}`.replace(/\/+/g, "/");
-    const pathParts = fullPath.split("/");
-    const fileName = pathParts.pop() || "";
-    const folderPath = pathParts.join("/");
-
-    const { data, error } = await supabase.storage
-      .from(BUCKET_NAME)
-      .list(folderPath, { search: fileName });
-
-    if (error || !data || !data.some(f => f.name === fileName)) throw new ObjectNotFoundError();
-
-    return { name: entityId, bucket: BUCKET_NAME, path: fullPath };
-  }
-
-  normalizeObjectEntityPath(rawPath: string): string {
-    if (rawPath.startsWith("/objects/")) return rawPath;
-    try {
-      const url = new URL(rawPath);
-      const prefix = `/storage/v1/object/public/${BUCKET_NAME}/`;
-      const signPrefix = `/storage/v1/object/sign/${BUCKET_NAME}/`;
-      
-      let storagePath = "";
-      if (url.pathname.startsWith(prefix)) storagePath = url.pathname.slice(prefix.length);
-      else if (url.pathname.startsWith(signPrefix)) storagePath = url.pathname.slice(signPrefix.length);
-      else return rawPath;
-
-      const privateDir = this.getPrivateObjectDir();
-      if (storagePath.startsWith(privateDir)) {
-        return `/objects/${storagePath.slice(privateDir.length).replace(/^\//, "")}`;
-      }
-      return `/${storagePath}`;
-    } catch {
-      return rawPath;
+    if (response.body) {
+      Readable.fromWeb(response.body as any).pipe(res);
+    } else {
+      res.end();
     }
+  } catch (error) {
+    if (error instanceof ObjectNotFoundError) {
+      res.status(404).json({ error: "Object not found" });
+      return;
+    }
+    req.log.error({ err: error }, "Private serve error");
+    res.status(500).json({ error: "Failed to serve object" });
   }
+});
 
-  async trySetObjectEntityAclPolicy(rawPath: string, _policy: any): Promise<string> {
-    return this.normalizeObjectEntityPath(rawPath);
-  }
-
-  async canAccessObjectEntity(_args: any): Promise<boolean> {
-    return true;
-  }
-}
+export default router;
