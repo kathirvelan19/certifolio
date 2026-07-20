@@ -35,7 +35,7 @@ router.post("/storage/uploads/request-url", async (req: Request, res: Response) 
 
 router.get("/storage/public-objects/*", async (req: Request, res: Response) => {
   try {
-    const filePath = req.params[0];
+    const filePath = req.params.path;
     const file = await objectStorageService.searchPublicObject(filePath);
     if (!file) {
       res.status(404).json({ error: "File not found" });
@@ -59,7 +59,7 @@ router.get("/storage/public-objects/*", async (req: Request, res: Response) => {
 
 router.get("/storage/objects/*", async (req: Request, res: Response) => {
   try {
-    const wildcardPath = req.params[0];
+    const wildcardPath = req.params.path;
     const objectPath = `/objects/${wildcardPath}`;
     const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
 
