@@ -33,7 +33,7 @@ router.post("/storage/uploads/request-url", async (req: Request, res: Response) 
   }
 });
 
-router.get("/storage/public-objects/*", async (req: Request, res: Response) => {
+router.get("/storage/public-objects/:path(*)", async (req: Request, res: Response) => {
   try {
     const filePath = req.params.path;
     const file = await objectStorageService.searchPublicObject(filePath);
@@ -57,7 +57,7 @@ router.get("/storage/public-objects/*", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/storage/objects/*", async (req: Request, res: Response) => {
+router.get("/storage/objects/:path(*)", async (req: Request, res: Response) => {
   try {
     const wildcardPath = req.params.path;
     const objectPath = `/objects/${wildcardPath}`;
